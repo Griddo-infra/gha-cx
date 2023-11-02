@@ -1,0 +1,48 @@
+name: Deploy CX-DEV on push
+
+description: 'Update changes in CX'
+
+runs:
+    steps:
+      - name: CX cleanup
+        run: rm -rvf ./*
+
+      - id: griddo_cx_check
+        name: CX check
+        run: echo SHOULD_RUN=$(curl -sL "$API_URL/sites/build/launch" | jq .'render') >> $GITHUB_OUTPUT
+
+      - name: CX checkout
+        uses: actions/checkout@v3
+        if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+
+      - name: CX create .env file
+        run: env > .env
+        if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+
+      - name: CX setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+        if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+
+      - id: griddo_yarn_install
+        name: CX yarn dependencies
+        run: yarn --silent --mutex network install
+        if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+
+      - id: griddo_cx_run
+        name: CX run
+        run: yarn --silent griddo-cx
+        if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+
+      - name: CX Upload
+        run: aws s3 $GRIDDO_BUCKETS_AWS_ENDPOINT_PARAM sync $GRIDDO_CX_DIST_FOLDER $GRIDDO_CX_BUCKET_URL
+        if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+
+      - name: CX (on failure)
+        run: |
+          cd node_modules/@griddo/cx
+          npm run reset-render
+        if: ${{ failure() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
+    
