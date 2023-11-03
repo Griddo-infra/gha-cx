@@ -3,6 +3,7 @@ name: Deploy CX-DEV on push
 description: 'Update changes in CX'
 
 runs:
+    using: composite
     steps:
       - name: Test 
         run: echo -e "This is fine! \U0002615\U001F525"
