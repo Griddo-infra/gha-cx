@@ -7,10 +7,12 @@ runs:
     steps:
 
       - name: CX cleanup
+        shell: bash
         run: rm -rvf ./*
 
       - id: griddo_cx_check
         name: CX check
+        shell: bash
         run: echo SHOULD_RUN=$(curl -sL "$API_URL/sites/build/launch" | jq .'render') >> $GITHUB_OUTPUT
 
       - name: CX checkout
@@ -18,6 +20,7 @@ runs:
         if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
 
       - name: CX create .env file
+        shell: bash
         run: env > .env
         if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
 
@@ -30,19 +33,23 @@ runs:
 
       - id: griddo_yarn_install
         name: CX yarn dependencies
+        shell: bash
         run: yarn --silent --mutex network install
         if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
 
       - id: griddo_cx_run
         name: CX run
+        shell: bash
         run: yarn --silent griddo-cx
         if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
 
       - name: CX Upload
+        shell: bash
         run: aws s3 $GRIDDO_BUCKETS_AWS_ENDPOINT_PARAM sync $GRIDDO_CX_DIST_FOLDER $GRIDDO_CX_BUCKET_URL
         if: ${{ success() && steps.griddo_cx_check.outputs.SHOULD_RUN == 'true' }}
 
       - name: CX (on failure)
+        shell: bash
         run: |
           cd node_modules/@griddo/cx
           npm run reset-render
