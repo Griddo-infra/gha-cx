@@ -1,14 +1,10 @@
-name: Deploy CX-DEV on push
+name: Griddo builder
 
-description: 'Update changes in CX'
+description: 'Generate Griddo sites'
 
 runs:
     using: composite
     steps:
-
-      - name: CX cleanup
-        shell: bash
-        run: rm -rvf ./*
 
       - id: griddo_cx_check
         name: CX check
